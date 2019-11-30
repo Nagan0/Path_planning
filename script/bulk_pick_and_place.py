@@ -86,16 +86,14 @@ class BulkPickandPlace():
         return pose_elements
 
 
-    def add_offset(self, pose_elements):
+    def calc_offset(self, pose_elements):
         #Linear interpolate based trajectory
         pose_elements_lin = {}
         length_lin = len(pose_elements["pos_x"])
 
-        pose_elements_lin[self.pose_names[0]] = np.linspace(pose_elements["pos_x"][0], pose_elements["pos_x"][-1], length_lin)
-        pose_elements_lin[self.pose_names[1]] = np.linspace(pose_elements["pos_y"][0], pose_elements["pos_y"][-1], length_lin)
-        pose_elements_lin[self.pose_names[2]] = np.linspace(pose_elements["pos_z"][0], pose_elements["pos_z"][-1], length_lin)
+        for i in range(0, 3):
+            pose_elements_lin[self.pose_names[i]] = np.linspace(pose_elements[self.pose_names[i]][0], pose_elements[self.pose_names[i]][-1], length_lin)
 
-        
         """
         t_raw = np.linspace(0, 1, 2)
         t = np.linspace(0, 1, len(pose_elements[self.pose_names[0]]))
@@ -119,14 +117,35 @@ class BulkPickandPlace():
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 continue
         """
-        #pose_target[self.pose_names[0]] = 
+
+        pose_target_lin = {}
+
+        target_start_x = 0.601
+        target_start_y = 0.201
+        target_start_z = 0.501
+
+        target_goal_x = 0.288
+        target_goal_y = 0.000
+        target_goal_z = 0.604
+
+        pose_target_lin[self.pose_names[0]] = np.linspace(target_start_x, target_goal_x, length_lin)
+        pose_target_lin[self.pose_names[1]] = np.linspace(target_start_y, target_goal_y, length_lin)
+        pose_target_lin[self.pose_names[2]] = np.linspace(target_start_z, target_goal_z, length_lin)
+
         
         #Calc offset
-        
+        pose_offset = {}
+        pose_new_trajectory = {} 
+
+        for i in range(0, 3):
+            pose_offset[self.pose_names[i]] = pose_elements[self.pose_names[i]] - pose_elements_lin[self.pose_names[i]]
+            pose_new_trajectory[self.pose_names[i]] = pose_target_lin[self.pose_names[i]] + pose_offset[self.pose_names[i]]
 
 
-        return pose_elements_lin
-        #return pose_target
+
+        #return pose_elements_lin
+        #return pose_target_lin
+        return pose_new_trajectory
 
 
     def plot_trajectory(self, pose_elements, pose_elements_lin):
@@ -154,7 +173,6 @@ class BulkPickandPlace():
         ax.plot([pos_lin_x[0]], [pos_lin_y[0]], [pos_lin_z[0]], "o", color = "r", ms = 6, label = 'moving START')
         ax.plot([pos_lin_x[-1]], [pos_lin_y[-1]], [pos_lin_z[-1]], "o", color = "g", ms = 6, label = 'moving GOAL')
 
-
         ax.legend()
         fig.suptitle('moving')
         plt.tight_layout()
@@ -171,7 +189,7 @@ def main():
     BPP = BulkPickandPlace()
     
     traj = BPP.load_trajectory_data()
-    linear = BPP.add_offset(traj)
+    linear = BPP.calc_offset(traj)
     BPP.plot_trajectory(traj, linear)
     try:
         rospy.spin()
