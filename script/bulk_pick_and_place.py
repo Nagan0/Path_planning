@@ -18,7 +18,8 @@ class BulkPickandPlace():
 
     def __init__(self):
         rospy.init_node('BulkPickandPlace', anonymous=True)
-        #self.trajectory_sub = rospy.Subscriber("bulk_trafectory", PoseArray, self.callback, queue_size=1,buff_size2**24)
+        #self.target_sub = rospy.Subscriber("bulk_trajectory", PoseArray, self.callback, queue_size=1,buff_size2**24)
+        self.trajectory_pub = rospy.Publisher("transformed_traj", PoseArray, queue_size = 1)
 
         #self.down_sampling_rate = 0.2
         #self.num_of_waypoints_after_upsampling = 20
@@ -37,9 +38,7 @@ class BulkPickandPlace():
 
 
     
-
     def load_trajectory_data(self):
-
         file = open("/home/shuntaro/denso_ws/src/denso_pkgs/denso_path_planning/documents/path.csv", 'r')
         lines = file.readlines()
         length = len(lines)
@@ -61,7 +60,6 @@ class BulkPickandPlace():
         #rot_33 = []
 
         for i in range(0, length/6):
-
             pos_x.append(float(lines[6*i]))
             pos_y.append(float(lines[6*i + 1]))
             pos_z.append(float(lines[6*i + 2]))
@@ -74,8 +72,7 @@ class BulkPickandPlace():
             rot_3.append(lines[6*i + 5])
             #rot_32.append(float(line[10]))
             #rot_33.append(float(line[11]))
-
-        
+     
         pose_elements[self.pose_names[0]] = np.array(pos_x)
         pose_elements[self.pose_names[1]] = np.array(pos_y)
         pose_elements[self.pose_names[2]] = np.array(pos_z)
@@ -86,6 +83,7 @@ class BulkPickandPlace():
         return pose_elements
 
 
+
     def calc_offset(self, pose_elements):
         #Linear interpolate based trajectory
         pose_elements_lin = {}
@@ -94,12 +92,6 @@ class BulkPickandPlace():
         for i in range(0, 3):
             pose_elements_lin[self.pose_names[i]] = np.linspace(pose_elements[self.pose_names[i]][0], pose_elements[self.pose_names[i]][-1], length_lin)
 
-        """
-        t_raw = np.linspace(0, 1, 2)
-        t = np.linspace(0, 1, len(pose_elements[self.pose_names[0]]))
-        for i in (0, 2):
-            pose_elements_lin[self.pose_names[i]] = interpolate.interp1d(t_raw, pose_elements_lin[self.pose_names[i]], kind = 'linear')(t)
-        """
 
         #Linear interpolate between grasp point and asm point
         """
@@ -132,7 +124,7 @@ class BulkPickandPlace():
         pose_target_lin[self.pose_names[1]] = np.linspace(target_start_y, target_goal_y, length_lin)
         pose_target_lin[self.pose_names[2]] = np.linspace(target_start_z, target_goal_z, length_lin)
 
-        
+
         #Calc offset
         pose_offset = {}
         pose_new_trajectory = {} 
@@ -142,13 +134,37 @@ class BulkPickandPlace():
             pose_new_trajectory[self.pose_names[i]] = pose_target_lin[self.pose_names[i]] + pose_offset[self.pose_names[i]]
 
 
+        #add rotation
+        for i in range(3, 6):
+            pose_new_trajectory[self.pose_names[i]] = pose_elements[self.pose_names[i]]
+
 
         #return pose_elements_lin
         #return pose_target_lin
         return pose_new_trajectory
 
 
-    def plot_trajectory(self, pose_elements, pose_elements_lin):
+
+    def dict_to_posearray(self, pose_dict):
+        pose_array_msg = PoseArray()
+
+        for i in range(len(pose_dict["pos_x"])):
+            pose_msg = Pose()
+            pose_msg.position.x = pose_dict["pos_x"][i]
+            pose_msg.position.y = pose_dict["pos_y"][i]
+            pose_msg.position.z = pose_dict["pos_z"][i]
+
+        return pose_array_msg
+
+
+
+    def publish_transformed_trajectory(self, pose_pose):
+        pose_array_msg = self.dict_to_posearray(pose_pose)
+        self.trajectory_pub.publish(pose_array_msg)
+
+
+
+    def plot_trajectory(self, pose_elements, pose_new_trajectory):
         fig = plt.figure(1)
         ax = fig.gca(projection = '3d')
 
@@ -156,9 +172,9 @@ class BulkPickandPlace():
         pos_y = pose_elements["pos_y"]
         pos_z = pose_elements["pos_z"]
 
-        pos_lin_x = pose_elements_lin["pos_x"]
-        pos_lin_y = pose_elements_lin["pos_y"]
-        pos_lin_z = pose_elements_lin["pos_z"]
+        pos_new_x = pose_new_trajectory["pos_x"]
+        pos_new_y = pose_new_trajectory["pos_y"]
+        pos_new_z = pose_new_trajectory["pos_z"]
 
         ax.set_xlabel(r'$x$ [m]', fontsize = 14)
         ax.set_ylabel(r'$y$ [m]', fontsize = 14)
@@ -169,14 +185,15 @@ class BulkPickandPlace():
         ax.plot([0], [0], [0], 'o', color = 'y', ms = 6, label = 'world origin')
 
         ax.plot(pos_x, pos_y, pos_z, "o", color = "c", ms =6, label = 'trajectory data')
-        ax.plot(pos_lin_x, pos_lin_y, pos_lin_z, "o", color = "b", ms = 6, label = 'linear interpolate data')
-        ax.plot([pos_lin_x[0]], [pos_lin_y[0]], [pos_lin_z[0]], "o", color = "r", ms = 6, label = 'moving START')
-        ax.plot([pos_lin_x[-1]], [pos_lin_y[-1]], [pos_lin_z[-1]], "o", color = "g", ms = 6, label = 'moving GOAL')
+        ax.plot(pos_new_x, pos_new_y, pos_new_z, "o", color = "b", ms = 6, label = 'new trajectory data')
+        ax.plot([pos_new_x[0]], [pos_new_y[0]], [pos_new_z[0]], "o", color = "r", ms = 6, label = 'moving START')
+        ax.plot([pos_new_x[-1]], [pos_new_y[-1]], [pos_new_z[-1]], "o", color = "g", ms = 6, label = 'moving GOAL')
 
         ax.legend()
         fig.suptitle('moving')
         plt.tight_layout()
         plt.show()
+
 
 
     #def callback(self, data):
