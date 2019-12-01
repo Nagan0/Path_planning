@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(Path_planning)
 
-set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
-
+#set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
+add_compile_options(-std=c++14)
 
 
 find_package(catkin REQUIRED COMPONENTS
@@ -38,7 +38,8 @@ catkin_package(
 add_executable(dataset src/dataset.cpp)
 target_link_libraries(dataset ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-
+add_executable(ik_bulk src/ik_bulk.cpp)
+target_link_libraries(ik_bulk ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 add_executable(moving_example src/moving_example.cpp)
 target_link_libraries(moving_example ${catkin_LIBRARIES} ${Boost_LIBRARIES})
