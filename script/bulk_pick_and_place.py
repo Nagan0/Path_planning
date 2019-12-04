@@ -3,6 +3,7 @@ import numpy as np
 from scipy import interpolate
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from scipy.spatial.transform import Rotation
 
 import rospy
 import rospkg
@@ -17,9 +18,10 @@ from time import sleep
 class BulkPickandPlace():
 
     def __init__(self):
-        rospy.init_node('BulkPickandPlace', anonymous=True)
+        rospy.init_node('BulkPickandPlace', anonymous=False)
         #self.target_sub = rospy.Subscriber("bulk_trajectory", PoseArray, self.callback, queue_size=1,buff_size2**24)
-        self.trajectory_pub = rospy.Publisher("transformed_traj", PoseArray, queue_size = 1)
+        #self.callback()
+        self.trajectory_pub = rospy.Publisher("transformed_traj", PoseArray, queue_size = 10)
 
         #self.down_sampling_rate = 0.2
         #self.num_of_waypoints_after_upsampling = 20
@@ -28,7 +30,7 @@ class BulkPickandPlace():
         #self.offset_z = 0.4
         #self.offset_x = 0.0
         #self.offset_z = 0.3
-        self.pose_names = ["pos_x", "pos_y", "pos_z", "rot_1", "rot_2", "rot_3"]
+        self.pose_names = ["pos_x", "pos_y", "pos_z", "ori_w", "ori_x", "ori_y", "ori_z"]
         rospy.loginfo("Bulk Pick and Place Node.")
         #rospy.loginfo("down_sampling_rate: "+str(self.down_sampling_rate))
         #rospy.loginfo("num_of_waypoints_after_upsampling: "+str(self.num_of_waypoints_after_upsampling))
@@ -49,37 +51,62 @@ class BulkPickandPlace():
         pos_x = []
         pos_y = []
         pos_z = []
+       
+        ori_w = []
+        ori_x = []
+        ori_y = []
+        ori_z = []
+
         rot_1 = []
-        #rot_12 = []
-        #rot_13 = []
         rot_2 = []
-        #rot_22 = []
-        #rot_23 = []
         rot_3 = []
-        #rot_32 = []
-        #rot_33 = []
+
+        rot_11 = []
+        rot_12 = []
+        rot_13 = []
+        rot_21 = []
+        rot_22 = []
+        rot_23 = []
+        rot_31 = []
+        rot_32 = []
+        rot_33 = []
+
+        rot_str_1 = []
+        rot_str_2 = []
+        rot_str_3 = []
+        
 
         for i in range(0, length/6):
             pos_x.append(float(lines[6*i]))
-            pos_y.append(float(lines[6*i + 1]))
-            pos_z.append(float(lines[6*i + 2]))
-            rot_1.append(lines[6*i + 3])
-            #rot_12.append(float(line[4]))
-            #rot_13.append(float(line[5]))
-            rot_2.append(lines[6*i + 4])
-            #rot_22.append(float(line[7]))
-            #rot_23.append(float(line[8]))
-            rot_3.append(lines[6*i + 5])
-            #rot_32.append(float(line[10]))
-            #rot_33.append(float(line[11]))
-     
+            pos_y.append(float(lines[6*i+1]))
+            pos_z.append(float(lines[6*i+2]))
+            
+            rot_1_str = lines[6*i+3].split()
+            rot_1.append([float(s) for s in rot_1_str])
+            rot_2_str = lines[6*i+4].split()
+            rot_2.append([float(s) for s in rot_2_str])
+            rot_3_str = lines[6*i+5].split()
+            rot_3.append([float(s) for s in rot_3_str])
+ 
+            rotation = np.array([[rot_1[0][0], rot_1[0][1], rot_1[0][2]], [rot_2[0][0], rot_2[0][1], rot_2[0][2]], [rot_3[0][0], rot_3[0][1], rot_3[0][2]]])
+            rot = Rotation.from_dcm(rotation)
+            orientation = rot.as_quat()
+
+            ori_w.append(float(orientation[3]))
+            ori_x.append(float(orientation[0]))
+            ori_y.append(float(orientation[1]))
+            ori_z.append(float(orientation[2]))
+        
+
         pose_elements[self.pose_names[0]] = np.array(pos_x)
         pose_elements[self.pose_names[1]] = np.array(pos_y)
         pose_elements[self.pose_names[2]] = np.array(pos_z)
-        pose_elements[self.pose_names[3]] = rot_1
-        pose_elements[self.pose_names[4]] = rot_2
-        pose_elements[self.pose_names[5]] = rot_3
-
+        pose_elements[self.pose_names[3]] = np.array(ori_w)
+        pose_elements[self.pose_names[4]] = np.array(ori_x)
+        pose_elements[self.pose_names[5]] = np.array(ori_y)
+        pose_elements[self.pose_names[6]] = np.array(ori_z)
+        
+        
         return pose_elements
 
 
@@ -135,7 +162,7 @@ class BulkPickandPlace():
 
 
         #add rotation
-        for i in range(3, 6):
+        for i in range(3, 7):
             pose_new_trajectory[self.pose_names[i]] = pose_elements[self.pose_names[i]]
 
 
@@ -153,7 +180,11 @@ class BulkPickandPlace():
             pose_msg.position.x = pose_dict["pos_x"][i]
             pose_msg.position.y = pose_dict["pos_y"][i]
             pose_msg.position.z = pose_dict["pos_z"][i]
-
+            pose_msg.orientation.w = pose_dict["ori_w"][i]
+            pose_msg.orientation.z = pose_dict["ori_x"][i]
+            pose_msg.orientation.z = pose_dict["ori_y"][i]
+            pose_msg.orientation.z = pose_dict["ori_z"][i]
+            pose_array_msg.poses.append(pose_msg)
         return pose_array_msg
 
 
@@ -161,6 +192,8 @@ class BulkPickandPlace():
     def publish_transformed_trajectory(self, pose_pose):
         pose_array_msg = self.dict_to_posearray(pose_pose)
         self.trajectory_pub.publish(pose_array_msg)
+
+        #return pose_array_msg
 
 
 
@@ -196,7 +229,13 @@ class BulkPickandPlace():
 
 
 
-    #def callback(self, data):
+    def callback(self):
+        traj = self.load_trajectory_data()
+        new_traj = self.calc_offset(traj)
+        #print(str(traj))
+        self.plot_trajectory(traj, new_traj)
+        self.publish_transformed_trajectory(new_traj)
+        #self.plot_trajectory(traj, new_traj)
 
 
 
@@ -204,10 +243,15 @@ def main():
     #BuldPickandPlace()
 
     BPP = BulkPickandPlace()
+    BPP.callback()
     
-    traj = BPP.load_trajectory_data()
-    linear = BPP.calc_offset(traj)
-    BPP.plot_trajectory(traj, linear)
+    #traj = BPP.load_trajectory_data()
+    #new_traj = BPP.calc_offset(traj)
+    #BPP.plot_trajectory(traj, new_traj)
+
+    #BPP.publish_transformed_trajectory(new_traj)
+
+
     try:
         rospy.spin()
     except KeyboardInterrupt:

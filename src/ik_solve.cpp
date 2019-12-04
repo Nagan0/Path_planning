@@ -22,7 +22,7 @@ int main(int argc, char** argv)
 
   moveit::planning_interface::MoveGroupInterface group("arm");
 
-  ros::Subscriber human_traj_sub {nh.subscribe<geometry_msgs::PoseArray>("human_traj", 1,
+  ros::Subscriber transformed_traj_sub {nh.subscribe<geometry_msgs::PoseArray>("transformed_traj", 1,
     std::function<void (const geometry_msgs::PoseArray::ConstPtr&)>
     {
       [&](const auto& target)
