@@ -88,12 +88,12 @@ class MoveGroupPythonIntefaceTutorial(object):
 
 
         joint_goal = group.get_current_joint_values()
-        joint_goal[0] = pi/8
-        joint_goal[1] = -pi/4
-        joint_goal[2] = pi/2
-        joint_goal[3] = -pi/2
-        joint_goal[4] = pi/4
-        joint_goal[5] = pi/3
+        joint_goal[0] = 0.322657
+        joint_goal[1] = 0.523146
+        joint_goal[2] = 1.57597
+        joint_goal[3] = 0.00083526
+        joint_goal[4] = 1.04321
+        joint_goal[5] = 3.464
         #joint_goal[6] = 0
 
 
@@ -247,7 +247,7 @@ def main():
         print "========== Press 'Enter' to execute a movement using a joint state goal ..."
         raw_input()
         tutorial.go_to_joint_state()
-
+        """
         print "========== Press 'Enter' to execute a movement using a pose goal ..."
         raw_input()
         tutorial.go_to_pose_goal()
@@ -284,7 +284,7 @@ def main():
         print "========== Press 'Enter' to remove the box from the planning scene ..."
         raw_input()
         tutorial.remove_box()
-
+        """
         print "========== Python tutorial demo complete!"
 
     except rospy.ROSInterruptException:
