@@ -21,7 +21,7 @@ class BulkPickandPlace():
         rospy.init_node('BulkPickandPlace', anonymous=False)
         #self.target_sub = rospy.Subscriber("bulk_trajectory", PoseArray, self.callback, queue_size=1,buff_size2**24)
         #self.callback()
-        self.trajectory_pub = rospy.Publisher("transformed_traj", PoseArray, queue_size = 10)
+        self.trajectory_pub = rospy.Publisher("transformed_traj", PoseArray, queue_size = 1)
 
         #self.down_sampling_rate = 0.2
         #self.num_of_waypoints_after_upsampling = 20
@@ -181,8 +181,8 @@ class BulkPickandPlace():
             pose_msg.position.y = pose_dict["pos_y"][i]
             pose_msg.position.z = pose_dict["pos_z"][i]
             pose_msg.orientation.w = pose_dict["ori_w"][i]
-            pose_msg.orientation.z = pose_dict["ori_x"][i]
-            pose_msg.orientation.z = pose_dict["ori_y"][i]
+            pose_msg.orientation.x = pose_dict["ori_x"][i]
+            pose_msg.orientation.y = pose_dict["ori_y"][i]
             pose_msg.orientation.z = pose_dict["ori_z"][i]
             pose_array_msg.poses.append(pose_msg)
         return pose_array_msg
@@ -232,7 +232,7 @@ class BulkPickandPlace():
     def callback(self):
         traj = self.load_trajectory_data()
         new_traj = self.calc_offset(traj)
-        #print(str(traj))
+        print(str(traj))
         self.plot_trajectory(traj, new_traj)
         self.publish_transformed_trajectory(new_traj)
         #self.plot_trajectory(traj, new_traj)

@@ -38,9 +38,6 @@ catkin_package(
 add_executable(dataset src/dataset.cpp)
 target_link_libraries(dataset ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-add_executable(ik_bulk src/ik_bulk.cpp)
-target_link_libraries(ik_bulk ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-
 add_executable(moving_example src/moving_example.cpp)
 target_link_libraries(moving_example ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
@@ -49,3 +46,6 @@ target_link_libraries(ik_solve ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 add_executable(ik_test src/ik_test.cpp)
 target_link_libraries(ik_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
+add_executable(ik_stomp src/ik_stomp.cpp)
+target_link_libraries(ik_stomp ${catkin_LIBRARIES} ${Boost_LIBRARIES})
