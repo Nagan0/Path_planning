@@ -22,11 +22,13 @@ int main(int argc, char** argv)
   spinner.start();
 
   moveit::planning_interface::MoveGroupInterface group("arm");
-  moveit_visual_tools::MoveItVisualTools visual_tools("world");
+  
+  //moveit_visual_tools::MoveItVisualTools visual_tools("world");
+  
   Eigen::Affine3d text_pose = Eigen::Affine3d::Identity();
   text_pose.translation().z() = 1.75;
-  visual_tools.publishText(text_pose, "Start ik solve");
-  visual_tools.trigger();
+  //visual_tools.publishText(text_pose, "Start ik solve");
+  //visual_tools.trigger();
 
   ros::Subscriber transformed_traj_sub {nh.subscribe<geometry_msgs::PoseArray>("transformed_traj", 1,
     std::function<void (const geometry_msgs::PoseArray::ConstPtr&)>
@@ -122,8 +124,8 @@ int main(int argc, char** argv)
         group.plan(result_plan);
         group.execute(result_plan);
 
-        visual_tools.publishText(text_pose, "Finish moving to goal");
-	visual_tools.trigger();
+        //visual_tools.publishText(text_pose, "Finish moving to goal");
+	//visual_tools.trigger();
       }
     }
   )};

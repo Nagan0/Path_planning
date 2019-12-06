@@ -18,7 +18,7 @@ from time import sleep
 class BulkPickandPlace():
 
     def __init__(self):
-        rospy.init_node('BulkPickandPlace', anonymous=False)
+        rospy.init_node('transform_trajectory', anonymous=True)
         #self.target_sub = rospy.Subscriber("bulk_trajectory", PoseArray, self.callback, queue_size=1,buff_size2**24)
         #self.callback()
         self.trajectory_pub = rospy.Publisher("transformed_traj", PoseArray, queue_size = 1)
@@ -31,7 +31,7 @@ class BulkPickandPlace():
         #self.offset_x = 0.0
         #self.offset_z = 0.3
         self.pose_names = ["pos_x", "pos_y", "pos_z", "ori_w", "ori_x", "ori_y", "ori_z"]
-        rospy.loginfo("Bulk Pick and Place Node.")
+        rospy.loginfo("Transform Trajectory Node.")
         #rospy.loginfo("down_sampling_rate: "+str(self.down_sampling_rate))
         #rospy.loginfo("num_of_waypoints_after_upsampling: "+str(self.num_of_waypoints_after_upsampling))
         #rospy.loginfo("upsampling interpolate method: "+self.interpolate_method)
@@ -88,6 +88,7 @@ class BulkPickandPlace():
             rot_3_str = lines[6*i+5].split()
             rot_3.append([float(s) for s in rot_3_str])
  
+            #Rotation2Quaternion
             rotation = np.array([[rot_1[0][0], rot_1[0][1], rot_1[0][2]], [rot_2[0][0], rot_2[0][1], rot_2[0][2]], [rot_3[0][0], rot_3[0][1], rot_3[0][2]]])
             rot = Rotation.from_dcm(rotation)
             orientation = rot.as_quat()
@@ -173,7 +174,10 @@ class BulkPickandPlace():
 
 
     def dict_to_posearray(self, pose_dict):
-        pose_array_msg = PoseArray()
+        pose_array = PoseArray()
+
+        #test
+        print("dict_pose")
 
         for i in range(len(pose_dict["pos_x"])):
             pose_msg = Pose()
@@ -184,56 +188,60 @@ class BulkPickandPlace():
             pose_msg.orientation.x = pose_dict["ori_x"][i]
             pose_msg.orientation.y = pose_dict["ori_y"][i]
             pose_msg.orientation.z = pose_dict["ori_z"][i]
-            pose_array_msg.poses.append(pose_msg)
-        return pose_array_msg
+            pose_array.poses.append(pose_msg)
+        return pose_array
 
 
 
     def publish_transformed_trajectory(self, pose_pose):
+        #test
+        print("ready_publish_pose")
+
         pose_array_msg = self.dict_to_posearray(pose_pose)
         self.trajectory_pub.publish(pose_array_msg)
 
-        #return pose_array_msg
+        #test
+        print("published_pose")
 
 
-
-    def plot_trajectory(self, pose_elements, pose_new_trajectory):
+    
+    def plot_trajectory(self, pose_first, pose_second):
         fig = plt.figure(1)
         ax = fig.gca(projection = '3d')
 
-        pos_x = pose_elements["pos_x"]
-        pos_y = pose_elements["pos_y"]
-        pos_z = pose_elements["pos_z"]
+        #pos_first_x = pose_first["pos_x"]
+        #pos_first_y = pose_first["pos_y"]
+        #pos_first_z = pose_first["pos_z"]
 
-        pos_new_x = pose_new_trajectory["pos_x"]
-        pos_new_y = pose_new_trajectory["pos_y"]
-        pos_new_z = pose_new_trajectory["pos_z"]
+        #pos_second_x = pose_second["pos_x"]
+        #pos_second_y = pose_second["pos_y"]
+        #pos_second_z = pose_second["pos_z"]
 
-        ax.set_xlabel(r'$x$ [m]', fontsize = 14)
-        ax.set_ylabel(r'$y$ [m]', fontsize = 14)
-        ax.set_zlabel(r'$z$ [m]', fontsize = 14)
-        #ax.set_xlim(0, 0.5)
-        ax.set_ylim(-0.25, 0.25)
-        #ax.set_zlim(0, 0.5)
-        ax.plot([0], [0], [0], 'o', color = 'y', ms = 6, label = 'world origin')
+        #ax.set_xlabel(r'$x$ [m]', fontsize = 14)
+        #ax.set_ylabel(r'$y$ [m]', fontsize = 14)
+        #ax.set_zlabel(r'$z$ [m]', fontsize = 14)
+        
+        #ax.set_ylim(-0.25, 0.25)
+        
+        #ax.plot([0], [0], [0], 'o', color = 'y', ms = 6, label = 'world origin')
 
-        ax.plot(pos_x, pos_y, pos_z, "o", color = "c", ms =6, label = 'trajectory data')
-        ax.plot(pos_new_x, pos_new_y, pos_new_z, "o", color = "b", ms = 6, label = 'new trajectory data')
-        ax.plot([pos_new_x[0]], [pos_new_y[0]], [pos_new_z[0]], "o", color = "r", ms = 6, label = 'moving START')
-        ax.plot([pos_new_x[-1]], [pos_new_y[-1]], [pos_new_z[-1]], "o", color = "g", ms = 6, label = 'moving GOAL')
+        #ax.plot(pos_first_x, pos_first_y, pos_first_z, "o", color = "c", ms =6, label = 'trajectory data')
+        #ax.plot(pos_second_x, pos_second_y, pos_second_z, "o", color = "b", ms = 6, label = 'new trajectory data')
+        #ax.plot([pos_second_x[0]], [pos_second_y[0]], [pos_second_z[0]], "o", color = "r", ms = 6, label = 'moving START')
+        #ax.plot([pos_second_x[-1]], [pos_second_y[-1]], [pos_second_z[-1]], "o", color = "g", ms = 6, label = 'moving GOAL')
 
-        ax.legend()
-        fig.suptitle('moving')
-        plt.tight_layout()
-        plt.show()
-
+        #ax.legend()
+        #fig.suptitle('moving')
+        #plt.tight_layout()
+        #plt.pause(0.01)
+    
+    
 
 
     def callback(self):
         traj = self.load_trajectory_data()
         new_traj = self.calc_offset(traj)
-        print(str(traj))
-        self.plot_trajectory(traj, new_traj)
+        self.plot_trajectory(new_traj, new_traj)
         self.publish_transformed_trajectory(new_traj)
         #self.plot_trajectory(traj, new_traj)
 
@@ -244,13 +252,6 @@ def main():
 
     BPP = BulkPickandPlace()
     BPP.callback()
-    
-    #traj = BPP.load_trajectory_data()
-    #new_traj = BPP.calc_offset(traj)
-    #BPP.plot_trajectory(traj, new_traj)
-
-    #BPP.publish_transformed_trajectory(new_traj)
-
 
     try:
         rospy.spin()
