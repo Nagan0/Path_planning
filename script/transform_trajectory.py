@@ -12,7 +12,8 @@ from visualization_msgs.msg import Marker
 
 import sys
 import copy
-from time import sleep
+#from time import sleep
+import time
 
 
 class BulkPickandPlace():
@@ -107,7 +108,6 @@ class BulkPickandPlace():
         pose_elements[self.pose_names[5]] = np.array(ori_y)
         pose_elements[self.pose_names[6]] = np.array(ori_z)
         
-        
         return pose_elements
 
 
@@ -119,7 +119,6 @@ class BulkPickandPlace():
 
         for i in range(0, 3):
             pose_elements_lin[self.pose_names[i]] = np.linspace(pose_elements[self.pose_names[i]][0], pose_elements[self.pose_names[i]][-1], length_lin)
-
 
         #Linear interpolate between grasp point and asm point
         """
@@ -175,10 +174,6 @@ class BulkPickandPlace():
 
     def dict_to_posearray(self, pose_dict):
         pose_array = PoseArray()
-
-        #test
-        print("dict_pose")
-
         for i in range(len(pose_dict["pos_x"])):
             pose_msg = Pose()
             pose_msg.position.x = pose_dict["pos_x"][i]
@@ -194,9 +189,6 @@ class BulkPickandPlace():
 
 
     def publish_transformed_trajectory(self, pose_pose):
-        #test
-        print("ready_publish_pose")
-
         pose_array_msg = self.dict_to_posearray(pose_pose)
         self.trajectory_pub.publish(pose_array_msg)
 
@@ -249,9 +241,14 @@ class BulkPickandPlace():
 
 def main():
     #BuldPickandPlace()
+    t1 = time.time()
 
     BPP = BulkPickandPlace()
     BPP.callback()
+
+    t2 = time.time()
+    t3 = t2 - t1
+    print("TIME:" + str(t3))
 
     try:
         rospy.spin()

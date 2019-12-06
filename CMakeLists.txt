@@ -44,8 +44,5 @@ target_link_libraries(moving_example ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_executable(ik_solve src/ik_solve.cpp)
 target_link_libraries(ik_solve ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-add_executable(ik_test src/ik_test.cpp)
-target_link_libraries(ik_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-
 add_executable(ik_stomp src/ik_stomp.cpp)
 target_link_libraries(ik_stomp ${catkin_LIBRARIES} ${Boost_LIBRARIES})
