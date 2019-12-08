@@ -16,10 +16,10 @@ import copy
 import time
 
 
-class TransformTrajectory():
+class TransformTrajectorySecond():
 
     def __init__(self):
-        rospy.init_node('transform_trajectory', anonymous=True)
+        rospy.init_node('transform_trajectory_second', anonymous=True)
         #self.target_sub = rospy.Subscriber("bulk_trajectory", PoseArray, self.callback, queue_size=1,buff_size2**24)
         #self.callback()
         self.trajectory_pub = rospy.Publisher("transformed_traj", PoseArray, queue_size = 1)
@@ -32,7 +32,7 @@ class TransformTrajectory():
         #self.offset_x = 0.0
         #self.offset_z = 0.3
         self.pose_names = ["pos_x", "pos_y", "pos_z", "ori_w", "ori_x", "ori_y", "ori_z"]
-        rospy.loginfo("Transform Trajectory Node.")
+        rospy.loginfo("Transform Trajectory Second Node.")
         #rospy.loginfo("down_sampling_rate: "+str(self.down_sampling_rate))
         #rospy.loginfo("num_of_waypoints_after_upsampling: "+str(self.num_of_waypoints_after_upsampling))
         #rospy.loginfo("upsampling interpolate method: "+self.interpolate_method)
@@ -41,13 +41,13 @@ class TransformTrajectory():
 
 
     
-    def load_trajectory_data(self):
-        file = open("/home/shuntaro/denso_ws/src/denso_pkgs/denso_path_planning/documents/path.csv", 'r')
+    def load_offset_data(self):
+        file = open("/home/shuntaro/denso_ws/src/denso_pkgs/denso_path_planning/documents/output_offset.csv", 'r')
         lines = file.readlines()
         length = len(lines)
         file.close()
-        
-        pose_elements = {}
+
+        pose_offset = {}
 
         line = []
         pos_x = []
@@ -59,53 +59,37 @@ class TransformTrajectory():
         ori_y = []
         ori_z = []
 
-        rot_str_1 = []
-        rot_str_2 = []
-        rot_str_3 = []
-        
+        for j in range(0, length/7):
+            pos_x.append(float(lines[j]))
+        for j in range(0, length/7):
+            pos_y.append(float(lines[length/7+j]))
+        for j in range(0, length/7):
+            pos_y.append(float(lines[2*length/7+j]))
+        for j in range(0, length/7):
+            ori_w.append(float(lines[3*length/7+j]))
+        for j in range(0, length/7):
+            ori_x.append(float(lines[4*length/7+j]))
+        for j in range(0, length/7):
+            ori_y.append(float(lines[5*length/7+j]))
+        for j in range(0, length/7):
+            ori_z.append(float(lines[6*length/7+j]))
 
-        for i in range(0, length/6):
-            pos_x.append(float(lines[6*i]))
-            pos_y.append(float(lines[6*i+1]))
-            pos_z.append(float(lines[6*i+2]))
-            
-            rot_1_str = lines[6*i+3].split()
-            rot_1 = [float(s) for s in rot_1_str]
-            rot_2_str = lines[6*i+4].split()
-            rot_2 = [float(s) for s in rot_2_str]
-            rot_3_str = lines[6*i+5].split()
-            rot_3 = [float(s) for s in rot_3_str]
- 
-            #Rotation2Quaternion
-            rotation = np.array([[rot_1[0], rot_1[1], rot_1[2]], [rot_2[0], rot_2[1], rot_2[2]], [rot_3[0], rot_3[1], rot_3[2]]])
-            rot = Rotation.from_dcm(rotation)
-            orientation = rot.as_quat()
+        pose_offset[self.pose_names[0]] = np.array(pos_x)
+        pose_offset[self.pose_names[1]] = np.array(pos_y)
+        pose_offset[self.pose_names[2]] = np.array(pos_z)
+        pose_offset[self.pose_names[3]] = np.array(ori_w)
+        pose_offset[self.pose_names[4]] = np.array(ori_x)
+        pose_offset[self.pose_names[5]] = np.array(ori_y)
+        pose_offset[self.pose_names[6]] = np.array(ori_z)
+      
+        print(str(pose_offset))
 
-            ori_w.append(float(orientation[3]))
-            ori_x.append(float(orientation[0]))
-            ori_y.append(float(orientation[1]))
-            ori_z.append(float(orientation[2]))
-        
-
-        pose_elements[self.pose_names[0]] = np.array(pos_x)
-        pose_elements[self.pose_names[1]] = np.array(pos_y)
-        pose_elements[self.pose_names[2]] = np.array(pos_z)
-        pose_elements[self.pose_names[3]] = np.array(ori_w)
-        pose_elements[self.pose_names[4]] = np.array(ori_x)
-        pose_elements[self.pose_names[5]] = np.array(ori_y)
-        pose_elements[self.pose_names[6]] = np.array(ori_z)
-       
-        return pose_elements
+        return pose_offset
 
 
 
     def calc_offset(self, pose_elements):
-        #Linear interpolate based trajectory
-        pose_elements_lin = {}
         length_lin = len(pose_elements["pos_x"])
-
-        for i in range(0, 3):
-            pose_elements_lin[self.pose_names[i]] = np.linspace(pose_elements[self.pose_names[i]][0], pose_elements[self.pose_names[i]][-1], length_lin)
 
         #Linear interpolate between grasp point and asm point
         """
@@ -140,12 +124,10 @@ class TransformTrajectory():
 
 
         #Calc offset
-        pose_offset = {}
         pose_new_trajectory = {} 
 
         for i in range(0, 3):
-            pose_offset[self.pose_names[i]] = pose_elements[self.pose_names[i]] - pose_elements_lin[self.pose_names[i]]
-            pose_new_trajectory[self.pose_names[i]] = pose_target_lin[self.pose_names[i]] + pose_offset[self.pose_names[i]]
+            pose_new_trajectory[self.pose_names[i]] = pose_target_lin[self.pose_names[i]] + pose_elements[self.pose_names[i]]
 
 
         #add rotation
@@ -187,7 +169,7 @@ class TransformTrajectory():
     def plot_trajectory(self, pose_first, pose_second):
         fig = plt.figure(1)
         ax = fig.gca(projection = '3d')
-      
+
         #pos_first_x = pose_first["pos_x"]
         #pos_first_y = pose_first["pos_y"]
         #pos_first_z = pose_first["pos_z"]
@@ -218,8 +200,8 @@ class TransformTrajectory():
 
 
     def callback(self):
-        traj = self.load_trajectory_data()
-        new_traj = self.calc_offset(traj)
+        offs = self.load_offset_data()
+        new_traj = self.calc_offset(offs)
         self.plot_trajectory(new_traj, new_traj)
         self.publish_transformed_trajectory(new_traj)
         #self.plot_trajectory(traj, new_traj)
@@ -230,8 +212,8 @@ def main():
     #BuldPickandPlace()
     t1 = time.time()
 
-    TT = TransformTrajectory()
-    TT.callback()
+    TTS = TransformTrajectorySecond()
+    TTS.callback()
 
     t2 = time.time()
     t3 = t2 - t1

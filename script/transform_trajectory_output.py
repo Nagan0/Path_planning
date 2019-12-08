@@ -16,10 +16,10 @@ import copy
 import time
 
 
-class TransformTrajectory():
+class TransformTrajectoryOutput():
 
     def __init__(self):
-        rospy.init_node('transform_trajectory', anonymous=True)
+        rospy.init_node('transform_trajectory_output', anonymous=True)
         #self.target_sub = rospy.Subscriber("bulk_trajectory", PoseArray, self.callback, queue_size=1,buff_size2**24)
         #self.callback()
         self.trajectory_pub = rospy.Publisher("transformed_traj", PoseArray, queue_size = 1)
@@ -46,7 +46,7 @@ class TransformTrajectory():
         lines = file.readlines()
         length = len(lines)
         file.close()
-        
+
         pose_elements = {}
 
         line = []
@@ -58,6 +58,10 @@ class TransformTrajectory():
         ori_x = []
         ori_y = []
         ori_z = []
+
+        #rot_1 = []
+        #rot_2 = []
+        #rot_3 = []
 
         rot_str_1 = []
         rot_str_2 = []
@@ -85,7 +89,6 @@ class TransformTrajectory():
             ori_x.append(float(orientation[0]))
             ori_y.append(float(orientation[1]))
             ori_z.append(float(orientation[2]))
-        
 
         pose_elements[self.pose_names[0]] = np.array(pos_x)
         pose_elements[self.pose_names[1]] = np.array(pos_y)
@@ -94,7 +97,7 @@ class TransformTrajectory():
         pose_elements[self.pose_names[4]] = np.array(ori_x)
         pose_elements[self.pose_names[5]] = np.array(ori_y)
         pose_elements[self.pose_names[6]] = np.array(ori_z)
-       
+        
         return pose_elements
 
 
@@ -151,10 +154,17 @@ class TransformTrajectory():
         #add rotation
         for i in range(3, 7):
             pose_new_trajectory[self.pose_names[i]] = pose_elements[self.pose_names[i]]
+            pose_offset[self.pose_names[i]] = pose_elements[self.pose_names[i]]
 
+        #output
+        output_file = open("/home/shuntaro/denso_ws/src/denso_pkgs/denso_path_planning/documents/output_offset.csv", 'w')
+        print(str(pose_offset["ori_w"]))
+        
+        for i in range(0, 7):
+            output_file.writelines(('\n'.join((str(pose_offset[self.pose_names[i]]).split())[1:-1])) + '\n')
+        
+        output_file.close()
 
-        #return pose_elements_lin
-        #return pose_target_lin
         return pose_new_trajectory
 
 
@@ -187,7 +197,7 @@ class TransformTrajectory():
     def plot_trajectory(self, pose_first, pose_second):
         fig = plt.figure(1)
         ax = fig.gca(projection = '3d')
-      
+
         #pos_first_x = pose_first["pos_x"]
         #pos_first_y = pose_first["pos_y"]
         #pos_first_z = pose_first["pos_z"]
@@ -230,8 +240,8 @@ def main():
     #BuldPickandPlace()
     t1 = time.time()
 
-    TT = TransformTrajectory()
-    TT.callback()
+    TTO = TransformTrajectoryOutput()
+    TTO.callback()
 
     t2 = time.time()
     t3 = t2 - t1
