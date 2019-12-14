@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import numpy as np
 from scipy import interpolate
 import matplotlib.pyplot as plt
@@ -42,7 +43,8 @@ class CalculateComplexityOffset():
         pose_elements[self.pose_names[0]] = np.array(pos_x)
         pose_elements[self.pose_names[1]] = np.array(pos_y)
         pose_elements[self.pose_names[2]] = np.array(pos_z)
-        
+       
+        file.close()
         return pose_elements
 
 

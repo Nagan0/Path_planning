@@ -7,6 +7,7 @@ from scipy.spatial.transform import Rotation
 
 import rospy
 import rospkg
+import moveit_commander
 from geometry_msgs.msg import PoseArray, Pose
 from visualization_msgs.msg import Marker
 
@@ -24,6 +25,8 @@ class TransformTrajectory():
         #self.callback()
         self.trajectory_pub = rospy.Publisher("transformed_traj", PoseArray, queue_size = 1)
 
+        self.robot = moveit_commander.RobotCommander()
+        self.arm = moveit_commander.MoveGroupCommander("arm")
         #self.down_sampling_rate = 0.2
         #self.num_of_waypoints_after_upsampling = 20
         #self.interpolate_method = 'quadratic'
@@ -42,7 +45,10 @@ class TransformTrajectory():
 
     
     def load_trajectory_data(self):
-        file = open("/home/shuntaro/denso_ws/src/denso_pkgs/denso_path_planning/documents/path.csv", 'r')
+        #load pose and rotation
+        #file = open("/home/shuntaro/denso_ws/src/path_csv/path.csv", 'r')
+        #load pose and quaternion
+        file = open("/home/shuntaro/denso_ws/src/path_csv/path_quat.csv", 'r')
         lines = file.readlines()
         length = len(lines)
         file.close()
@@ -62,8 +68,9 @@ class TransformTrajectory():
         rot_str_1 = []
         rot_str_2 = []
         rot_str_3 = []
-        
 
+        """
+        #load pose and rotation
         for i in range(0, length/6):
             pos_x.append(float(lines[6*i]))
             pos_y.append(float(lines[6*i+1]))
@@ -75,7 +82,17 @@ class TransformTrajectory():
             rot_2 = [float(s) for s in rot_2_str]
             rot_3_str = lines[6*i+5].split()
             rot_3 = [float(s) for s in rot_3_str]
- 
+        """ 
+        #load pose and quaternion
+        for i in range(0, length/7):
+            pos_x.append(float(lines[7*i]))
+            pos_y.append(float(lines[7*i+1]))
+            pos_z.append(float(lines[7*i+2]))
+            ori_w.append(float(lines[7*i+3]))
+            ori_x.append(float(lines[7*i+4]))
+            ori_y.append(float(lines[7*i+5]))
+            ori_z.append(float(lines[7*i+6]))
+            """
             #Rotation2Quaternion
             rotation = np.array([[rot_1[0], rot_1[1], rot_1[2]], [rot_2[0], rot_2[1], rot_2[2]], [rot_3[0], rot_3[1], rot_3[2]]])
             rot = Rotation.from_dcm(rotation)
@@ -85,7 +102,7 @@ class TransformTrajectory():
             ori_x.append(float(orientation[0]))
             ori_y.append(float(orientation[1]))
             ori_z.append(float(orientation[2]))
-        
+            """
 
         pose_elements[self.pose_names[0]] = np.array(pos_x)
         pose_elements[self.pose_names[1]] = np.array(pos_y)
@@ -125,6 +142,13 @@ class TransformTrajectory():
         """
 
         pose_target_lin = {}
+     
+        #print("Current state")
+        #print(self.robot.get_current_state())
+
+        arm_initial_pose = self.arm.get_current_pose().pose
+        print("Arm initial pose")
+        print(arm_initial_pose.position.x)
 
         target_start_x = 0.601
         target_start_y = 0.201

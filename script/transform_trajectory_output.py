@@ -160,8 +160,11 @@ class TransformTrajectoryOutput():
         output_file = open("/home/shuntaro/denso_ws/src/denso_pkgs/denso_path_planning/documents/output_offset.csv", 'w')
         print(str(pose_offset["ori_w"]))
         
-        for i in range(0, 7):
-            output_file.writelines(('\n'.join((str(pose_offset[self.pose_names[i]]).split())[1:-1])) + '\n')
+        #for i in range(0, 7):
+            #output_file.writelines(('\n'.join((str(pose_offset[self.pose_names[i]]).split())[1:-1])) + '\n')
+        
+        for i in range(3, 7):
+            output_file.writelines(('\n'.join(str(pose_offset[self.pose_names[i]]).split())) + '\n')
         
         output_file.close()
 
