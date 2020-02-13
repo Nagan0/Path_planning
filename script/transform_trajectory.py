@@ -150,9 +150,9 @@ class TransformTrajectory():
         print("Arm initial pose")
         print(arm_initial_pose.position.x)
 
-        target_start_x = 0.601
-        target_start_y = 0.201
-        target_start_z = 0.501
+        target_start_x = arm_initial_pose.position.x
+        target_start_y = arm_initial_pose.position.y
+        target_start_z = arm_initial_pose.position.z
 
         target_goal_x = 0.288
         target_goal_y = 0.000
